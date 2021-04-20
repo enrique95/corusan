@@ -1,18 +1,57 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "Análisis del caso Corusan"
+output: pdf_document
 ---
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+```{r, message=FALSE}
+options(scipen = 999)
+library(readxl)
+library(tidyverse)
 
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
-
-```{r}
-julio19 <- readxl::read_excel("Prueba consultores ABRIL 2021 (1).xlsx", sheet=4)
+julio19 <- readxl::read_excel("Prueba consultores ABRIL 2021 (1).xlsx", sheet=3)
+altas <- readxl::read_excel("Prueba consultores ABRIL 2021 (1).xlsx", sheet=4)
+bajas <- readxl::read_excel("Prueba consultores ABRIL 2021 (1).xlsx", sheet=5)
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+# Caso a resolver
+## 1.1 ¿Cuántos FTEs tiene la compañía en julio?
+```{r}
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+fte <- function(x,y){
+  (sum(x)/44)+(sum(y)/37.5)
+  
+}
+
+horas44 <- julio19 %>% 
+  filter(`HORAS TEÓRICAS SEMANALES POR UNIDAD DE NEGOCIO`==44.0) %>%
+  select(`PROMEDIO DE HORAS  SEMANALES TRABAJADAS EN EL MES`) %>% 
+  as.data.frame()
+
+
+horas37 <- julio19 %>% 
+  filter(`HORAS TEÓRICAS SEMANALES POR UNIDAD DE NEGOCIO`==37.5) %>% 
+  select(`PROMEDIO DE HORAS  SEMANALES TRABAJADAS EN EL MES`) %>% 
+  as.data.frame()
+
+FTES <- fte(horas44,horas37)
+
+```
+
+La compañía tiene `r FTES` FTEs en julio 
+
+## 1.2  ¿Qué porcentaje de dedicación tienen los empleados de lacompañía durante el mes de Julio de 2019?
+
+```{r}
+dedicacion <- FTES/nrow(julio19)*100
+```
+
+La compañía tiene un porcentaje de `r dedicacion` de dedicación
+
+## 2 ¿Cuantos empleados tiene la compañía a 31 de Agosto teniendo en cuenta las altas y las bajas de ese período?
+
+```{r}
+emplagosto <- nrow(julio19)-nrow(bajas)-nrow(altas)
+```
+
+La compañia tiene a 31 de agosto `r emplagosto` empleados
