@@ -6,11 +6,12 @@ output: pdf_document
 ```{r, message=FALSE}
 options(scipen = 999)
 library(readxl)
+library(pastecs)
 library(tidyverse)
 
 julio19 <- readxl::read_excel("Prueba consultores ABRIL 2021 (1).xlsx", sheet=3)
-altas <- readxl::read_excel("Prueba consultores ABRIL 2021 (1).xlsx", sheet=4)
-bajas <- readxl::read_excel("Prueba consultores ABRIL 2021 (1).xlsx", sheet=5)
+bajas <- readxl::read_excel("Prueba consultores ABRIL 2021 (1).xlsx", sheet=4)
+altas <- readxl::read_excel("Prueba consultores ABRIL 2021 (1).xlsx", sheet=5)
 ```
 
 
@@ -55,3 +56,47 @@ emplagosto <- nrow(julio19)-nrow(bajas)-nrow(altas)
 ```
 
 La compañia tiene a 31 de agosto `r emplagosto` empleados
+
+## 3 ¿Qué Índices de rotación ha tenido la compañía durante el mes de Agosto?
+### 3. A. Índice de Rotación Bruta: Número de bajas totales/num empleados inicio del período * 100
+
+```{r}
+irb <- nrow(bajas)/nrow(julio19)*100
+```
+
+El índice de rotación bruta es de `r irb`%
+
+### 3. B. Índice de Rotación Neta: [(Número de bajas + número de contrataciones) / 2] /num empleados inicio periodo * 100
+
+```{r}
+irn <- ((nrow(bajas)+nrow(altas)/2)/nrow(julio19))*100
+```
+
+El índice de rotación neta es de `r irn`%
+
+### 3. C. Índice de Rotación Bruta voluntaria: Número de bajas voluntarias / num empleados inicio del perído * 100
+
+```{r}
+irbv <- nrow(bajas[bajas$`Tipo de baja global` %in% c("b.2) Otras bajas vegetativas","b.1) Renuncias voluntarias"),])/nrow(julio19)*100
+```
+
+El índice de rotación bruta voluntaria es `r irbv`%
+
+### 3. D. Índice de Rotación Bruta Involuntaria: Número de bajas involuntarias / num empleados inicio del perído * 100
+
+```{r}
+irbi <- nrow((bajas[bajas$`Tipo de baja global` == "a.2 ) X otras causas (Indemnizaciones)",]))/nrow(julio19)*100
+```
+
+El índice de rotación bruta involuntaria es `r irbi`%
+
+## 4. Calcula la antigüedad media de los empleados que trabajan en Andalucía
+
+```{r}
+julio19$antiguedad <- as.numeric((as.POSIXct("2019-07-31")-julio19$`Fecha de Alta`))
+
+andalucia <- c("ALMERIA","CADIZ","CORDOBA","GRANADA","HUELVA","JAEN","MALAGA","SSEVILLA")
+
+antandalucia <- mean(julio19[julio19$`Localización Ciudad` %in% andalucia, "antiguedad",drop=FALSE])
+```
+
