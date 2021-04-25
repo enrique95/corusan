@@ -3,10 +3,10 @@ title: "Análisis del caso Corusan"
 output: pdf_document
 ---
 
+# Importar datos
 ```{r, message=FALSE}
 options(scipen = 999)
 library(readxl)
-library(pastecs)
 library(tidyverse)
 
 julio19 <- readxl::read_excel("Prueba consultores ABRIL 2021 (1).xlsx", sheet=3)
@@ -17,6 +17,7 @@ altas <- readxl::read_excel("Prueba consultores ABRIL 2021 (1).xlsx", sheet=5)
 
 # Caso a resolver
 ## 1.1 ¿Cuántos FTEs tiene la compañía en julio?
+
 ```{r}
 
 fte <- function(x,y){
@@ -77,7 +78,8 @@ El índice de rotación neta es de `r irn`%
 ### 3. C. Índice de Rotación Bruta voluntaria: Número de bajas voluntarias / num empleados inicio del perído * 100
 
 ```{r}
-irbv <- nrow(bajas[bajas$`Tipo de baja global` %in% c("b.2) Otras bajas vegetativas","b.1) Renuncias voluntarias"),])/nrow(julio19)*100
+volunt <- c("b.2) Otras bajas vegetativas","b.1) Renuncias voluntarias")
+irbv <- nrow(bajas[bajas$`Tipo de baja global`%in% volunt,])/nrow(julio19)*100
 ```
 
 El índice de rotación bruta voluntaria es `r irbv`%
@@ -85,7 +87,8 @@ El índice de rotación bruta voluntaria es `r irbv`%
 ### 3. D. Índice de Rotación Bruta Involuntaria: Número de bajas involuntarias / num empleados inicio del perído * 100
 
 ```{r}
-irbi <- nrow((bajas[bajas$`Tipo de baja global` == "a.2 ) X otras causas (Indemnizaciones)",]))/nrow(julio19)*100
+irbi <- nrow((bajas[bajas$`Tipo de baja global` 
+  =="a.2 ) X otras causas (Indemnizaciones)",]))/nrow(julio19)*100
 ```
 
 El índice de rotación bruta involuntaria es `r irbi`%
@@ -93,10 +96,43 @@ El índice de rotación bruta involuntaria es `r irbi`%
 ## 4. Calcula la antigüedad media de los empleados que trabajan en Andalucía
 
 ```{r}
-julio19$antiguedad <- as.numeric((as.POSIXct("2019-07-31")-julio19$`Fecha de Alta`))
+julio19$antiguedad <-(as.POSIXct("2019-07-31")-julio19$`Fecha de Alta`) %>% as.double()
 
-andalucia <- c("ALMERIA","CADIZ","CORDOBA","GRANADA","HUELVA","JAEN","MALAGA","SSEVILLA")
+andalucia <- c("ALMERIA","CADIZ","CORDOBA","GRANADA","HUELVA","JAEN","MALAGA","SEVILLA")
 
-antandalucia <- mean(julio19[julio19$`Localización Ciudad` %in% andalucia, "antiguedad",drop=FALSE])
+antandalucia <-julio19 %>% filter(julio19$`Localización Ciudad`%in% andalucia)
+mediandalucia <- mean(antandalucia$antiguedad)/365.25
+```
+
+La antigüedad media de los empleados que trabajan en Andalucía es `r mediandalucia` años
+
+# Análisis libre
+
+## 1. ¿Está cumpliendo CORUSAN con la LISMI?
+```{r}
+julio19$Discapacidad <- julio19$Discapacidad %>% as.factor()
+discpais <- julio19 %>% group_by(`Localización País`, Discapacidad) %>% summarise(percent = 100*n()/nrow(julio19), .groups = "drop")
+
+# discap <- ggplot(data = filter(discpais, Discapacidad=="Sí"))+
+#   aes(x=`Localización País`, y=percent,color=`Localización País`)+geom_bar(stat = "identity", position = "fill")
+# discap
+```
+
+
+## 2. Modelo lineal
+```{r}
+bajas$tipobaja <- 
+ifelse(bajas$`Tipo de baja global`=="a.2 ) X otras causas (Indemnizaciones)",0,1)
+
+bajas$edad <- bajas$`Fecha fin de contrato` - bajas$`Fecha nacimiento`
+
+formulabaja <- formula(tipobaja~`Unidad de Negocio` + Genero + edad)
+
+modelobaja <- glm(formula = formulabaja, family = binomial(link = "probit"), data = bajas)
+
+summary(modelobaja)
+
+plot(modelobaja)
+
 ```
 
